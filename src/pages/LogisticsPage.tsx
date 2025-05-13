@@ -1,12 +1,164 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { useTheme } from '../context/ThemeContext';
 import { Truck, MapPin, Route, Clock, Calendar, Box } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom truck icon
+const truckIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Custom destination icon
+const destinationIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+interface Vehicle {
+  id: string;
+  position: [number, number];
+  status: string;
+  driver: string;
+  route: string;
+  eta: string;
+}
+
+interface Destination {
+  id: string;
+  position: [number, number];
+  name: string;
+  address: string;
+  deliveryTime: string;
+}
+
+const MapComponent: React.FC<{
+  vehicles: Vehicle[];
+  destinations: Destination[];
+}> = ({ vehicles, destinations }) => {
+  const center: [number, number] = [51.505, -0.09];
+  
+  return (
+    <MapContainer 
+      center={center} 
+      zoom={13} 
+      style={{ height: '400px', width: '100%' }}
+      className="rounded-lg"
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      
+      {vehicles.map((vehicle) => (
+        <Marker 
+          key={vehicle.id}
+          position={vehicle.position}
+          icon={truckIcon}
+        >
+          <Popup>
+            <div>
+              <h3 className="font-semibold">{vehicle.driver}</h3>
+              <p>Route: {vehicle.route}</p>
+              <p>ETA: {vehicle.eta}</p>
+              <p>Status: {vehicle.status}</p>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+      
+      {destinations.map((dest) => (
+        <Marker
+          key={dest.id}
+          position={dest.position}
+          icon={destinationIcon}
+        >
+          <Popup>
+            <div>
+              <h3 className="font-semibold">{dest.name}</h3>
+              <p>{dest.address}</p>
+              <p>Delivery: {dest.deliveryTime}</p>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </MapContainer>
+  );
+};
 
 const LogisticsPage: React.FC = () => {
   const { theme } = useTheme();
+  const [vehicles, setVehicles] = useState<Vehicle[]>([
+    {
+      id: 'v1',
+      position: [51.505, -0.09],
+      status: 'In Transit',
+      driver: 'John Smith',
+      route: 'Downtown Route',
+      eta: '15 mins'
+    },
+    {
+      id: 'v2',
+      position: [51.51, -0.1],
+      status: 'Delivering',
+      driver: 'Maria Garcia',
+      route: 'East Side Route',
+      eta: '30 mins'
+    }
+  ]);
   
+  const [destinations] = useState<Destination[]>([
+    {
+      id: 'd1',
+      position: [51.515, -0.09],
+      name: 'Community Center',
+      address: '123 Main St',
+      deliveryTime: '2:00 PM'
+    },
+    {
+      id: 'd2',
+      position: [51.505, -0.08],
+      name: 'Food Bank',
+      address: '456 Oak Ave',
+      deliveryTime: '2:30 PM'
+    }
+  ]);
+
+  // Simulate vehicle movement
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVehicles(prev => prev.map(vehicle => ({
+        ...vehicle,
+        position: [
+          vehicle.position[0] + (Math.random() - 0.5) * 0.001,
+          vehicle.position[1] + (Math.random() - 0.5) * 0.001
+        ]
+      })));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Mock data for delivery routes
   const routes = [
     {
@@ -56,90 +208,35 @@ const LogisticsPage: React.FC = () => {
         return null;
     }
   };
-  
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Logistics Management</h1>
       <p className="text-gray-600 dark:text-gray-300 max-w-3xl">
-        Optimize the delivery of donations with our AI-powered logistics system. Plan efficient routes, track deliveries in real-time, and minimize transportation costs.
+        Track deliveries in real-time with our interactive map and logistics management system.
       </p>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <Card title="Route Map" subtitle="Live tracking of all delivery routes">
-            <div 
-              className={`relative w-full h-[400px] rounded-lg overflow-hidden ${
-                theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
-              }`}
-            >
-              {/* Map placeholder - would be replaced with actual map component */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-gray-500">Interactive logistics map would be displayed here</p>
-              </div>
-              
-              {/* Sample route markers */}
-              <div className="absolute top-[30%] left-[25%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <Truck size={24} className="text-blue-500" />
-                </div>
-              </div>
-              
-              <div className="absolute top-[50%] left-[55%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <Truck size={24} className="text-yellow-500" />
-                </div>
-              </div>
-              
-              {/* Route lines would be drawn here in a real implementation */}
-              
-              {/* Destination markers */}
-              <div className="absolute top-[35%] left-[35%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <MapPin size={20} className="text-red-500" />
-                </div>
-              </div>
-              
-              <div className="absolute top-[40%] left-[20%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <MapPin size={20} className="text-red-500" />
-                </div>
-              </div>
-              
-              <div className="absolute top-[25%] left-[15%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <MapPin size={20} className="text-red-500" />
-                </div>
-              </div>
-              
-              <div className="absolute top-[60%] left-[62%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <MapPin size={20} className="text-red-500" />
-                </div>
-              </div>
-              
-              <div className="absolute top-[45%] left-[40%] transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <MapPin size={20} className="text-red-500" />
-                </div>
-              </div>
-            </div>
+          <Card title="Live Tracking Map" subtitle="Real-time vehicle and delivery locations">
+            <MapComponent vehicles={vehicles} destinations={destinations} />
             
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Active Routes</p>
-                <p className="text-lg font-semibold">2</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Active Vehicles</p>
+                <p className="text-lg font-semibold">{vehicles.length}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Stops</p>
-                <p className="text-lg font-semibold">13</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Deliveries</p>
+                <p className="text-lg font-semibold">{destinations.length}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Items in Transit</p>
-                <p className="text-lg font-semibold">36</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">On Time</p>
+                <p className="text-lg font-semibold">98%</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Completed Today</p>
-                <p className="text-lg font-semibold">3</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                <p className="text-lg font-semibold">12</p>
               </div>
             </div>
           </Card>

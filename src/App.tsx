@@ -64,11 +64,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <LocationProvider>
-            <InventoryProvider>
-              <AnalyticsProvider>
-                <MatchingProvider>
+        <LocationProvider>
+          <InventoryProvider>
+            <AnalyticsProvider>
+              <MatchingProvider>
+                <AuthProvider>
                   <Router>
                     <Routes>
                       {/* Public routes */}
@@ -95,16 +95,13 @@ function App() {
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                       </Route>
-
-                      {/* Redirect root to auth if not authenticated */}
-                      <Route path="*" element={<Navigate to="/auth" replace />} />
                     </Routes>
                   </Router>
-                </MatchingProvider>
-              </AnalyticsProvider>
-            </InventoryProvider>
-          </LocationProvider>
-        </AuthProvider>
+                </AuthProvider>
+              </MatchingProvider>
+            </AnalyticsProvider>
+          </InventoryProvider>
+        </LocationProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

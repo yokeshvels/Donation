@@ -20,6 +20,7 @@ interface InventoryItem {
   priority: 'Low' | 'Medium' | 'High';
   expiry_date?: string;
   added_date: string;
+  location: string;
 }
 
 interface AddItemModalProps {
@@ -43,10 +44,15 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!locationAddress) {
+      alert('Please select a location');
+      return;
+    }
     setIsLoading(true);
     try {
       await onAdd({
         ...formData,
+        location: locationAddress,
         added_date: new Date().toISOString(),
       });
       onClose();
@@ -193,7 +199,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 ? 'bg-gray-700 border-gray-600' 
                 : 'bg-gray-100'
             }`}>
-              <p className="text-sm">Selected Location: {locationAddress}</p>
+              <p className="text-sm">Selected Location: {locationAddress || 'Please select a location'}</p>
             </div>
           </div>
 

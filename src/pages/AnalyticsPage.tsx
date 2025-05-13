@@ -1,11 +1,143 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '../components/ui/Card';
 import { useTheme } from '../context/ThemeContext';
 import { Calendar, BarChart, PieChart, TrendingUp, MessageSquare, Activity } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Line, Bar, Pie } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const AnalyticsPage: React.FC = () => {
   const { theme } = useTheme();
+  const [donationData, setDonationData] = useState({
+    labels: [] as string[],
+    datasets: [] as any[]
+  });
   
+  const [distributionData, setDistributionData] = useState({
+    labels: [] as string[],
+    datasets: [] as any[]
+  });
+  
+  const [predictionData, setPredictionData] = useState({
+    labels: [] as string[],
+    datasets: [] as any[]
+  });
+
+  useEffect(() => {
+    // Initialize charts with mock data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    
+    // Donation trends data
+    setDonationData({
+      labels: months,
+      datasets: [
+        {
+          label: 'Clothing',
+          data: [65, 59, 80, 81, 56, 55],
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        },
+        {
+          label: 'Food',
+          data: [28, 48, 40, 19, 86, 27],
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        },
+      ],
+    });
+    
+    // Distribution data
+    setDistributionData({
+      labels: ['Clothing', 'Food', 'Medical', 'Education', 'Other'],
+      datasets: [{
+        data: [35, 28, 18, 10, 9],
+        backgroundColor: [
+          'rgba(75, 192, 192, 0.5)',
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(153, 102, 255, 0.5)',
+        ],
+        borderColor: [
+          'rgba(75, 192, 192, 1)',
+          'rgba(255, 99, 132, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(153, 102, 255, 1)',
+        ],
+        borderWidth: 1,
+      }],
+    });
+    
+    // Prediction accuracy data
+    setPredictionData({
+      labels: months,
+      datasets: [{
+        label: 'Prediction Accuracy',
+        data: [92, 93, 91, 94, 92, 95],
+        borderColor: 'rgb(54, 162, 235)',
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+      }],
+    });
+    
+    // Simulate real-time updates
+    const interval = setInterval(() => {
+      setDonationData(prev => ({
+        ...prev,
+        datasets: prev.datasets.map(dataset => ({
+          ...dataset,
+          data: dataset.data.map(() => Math.floor(Math.random() * 100)),
+        })),
+      }));
+      
+      setPredictionData(prev => ({
+        ...prev,
+        datasets: prev.datasets.map(dataset => ({
+          ...dataset,
+          data: dataset.data.map(() => 90 + Math.random() * 5),
+        })),
+      }));
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  };
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Analytics & Insights</h1>
@@ -105,12 +237,8 @@ const AnalyticsPage: React.FC = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card title="Donation Trends" subtitle="Monthly donation volume by category">
-          <div 
-            className={`w-full h-[300px] rounded-lg flex items-center justify-center ${
-              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
-            }`}
-          >
-            <p className="text-gray-500">Bar chart visualization would be displayed here</p>
+          <div className="h-[300px]">
+            <Bar data={donationData} options={chartOptions} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 text-center">
             <div>
@@ -125,12 +253,8 @@ const AnalyticsPage: React.FC = () => {
         </Card>
         
         <Card title="Donation Distribution" subtitle="Percentage allocation across categories">
-          <div 
-            className={`w-full h-[300px] rounded-lg flex items-center justify-center ${
-              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
-            }`}
-          >
-            <p className="text-gray-500">Pie chart visualization would be displayed here</p>
+          <div className="h-[300px]">
+            <Pie data={distributionData} />
           </div>
           <div className="mt-4 grid grid-cols-4 gap-2 text-center">
             <div>
@@ -159,12 +283,8 @@ const AnalyticsPage: React.FC = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card title="AI Prediction Accuracy" subtitle="Model performance metrics">
-          <div 
-            className={`w-full h-[250px] rounded-lg flex items-center justify-center ${
-              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
-            }`}
-          >
-            <p className="text-gray-500">Line chart visualization would be displayed here</p>
+          <div className="h-[250px]">
+            <Line data={predictionData} options={chartOptions} />
           </div>
           <div className="mt-4 space-y-4">
             <div className="flex justify-between items-center">
